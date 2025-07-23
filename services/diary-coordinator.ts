@@ -2,14 +2,14 @@ import { format } from 'date-fns';
 import { simpleGit, SimpleGit } from 'simple-git';
 import MarkdownIt from 'markdown-it';
 
-import OpenAIService, { ActivityData } from './openai-service';
+import GeminiService, { ActivityData } from './gemini-service';
 import NotionService from './notion-service';
 import GitHubService from './github-service';
 import TelegramService from './telegram-service';
 import PiecesService from './pieces-service';
 
 export interface DiaryCoordinatorConfig {
-  openaiApiKey: string;
+  geminiApiKey: string;
   notionConfig?: {
     apiKey: string;
     databaseId: string;
@@ -29,7 +29,7 @@ export interface DiaryCoordinatorConfig {
 }
 
 export class DiaryCoordinator {
-  private openaiService: OpenAIService;
+  private geminiService: GeminiService;
   private notionService?: NotionService;
   private githubService?: GitHubService;
   private telegramService?: TelegramService;
@@ -38,7 +38,7 @@ export class DiaryCoordinator {
   private markdown: MarkdownIt;
 
   constructor(config: DiaryCoordinatorConfig) {
-    this.openaiService = new OpenAIService(config.openaiApiKey);
+    this.geminiService = new GeminiService(config.geminiApiKey);
     
     if (config.notionConfig) {
       this.notionService = new NotionService(config.notionConfig);
@@ -125,11 +125,11 @@ export class DiaryCoordinator {
       // Collect activities or use provided ones
       const activities = customActivities || await this.collectActivities();
       
-      // Generate diary content using OpenAI
-      const diaryMarkdown = await this.openaiService.generateDiaryContent(activities);
+      // Generate diary content using Gemini
+      const diaryMarkdown = await this.geminiService.generateDiaryContent(activities);
       
       // Enhance the diary with additional insights
-      const enhancedDiary = await this.openaiService.enhanceDiaryContent(diaryMarkdown);
+      const enhancedDiary = await this.geminiService.enhanceDiaryContent(diaryMarkdown);
       
       // Convert markdown to HTML
       const diaryHtml = this.markdown.render(enhancedDiary);

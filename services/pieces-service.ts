@@ -1,24 +1,51 @@
-import { Configuration, ConnectorApi, FlattenedAssets, PiecesApi, PortsApi } from '@pieces/pieces-os-client';
+import axios from 'axios';
 
 export interface PiecesConfig {
   baseUrl?: string;
   apiKey?: string;
 }
 
+// Type definitions to replace those from the pieces-os-client package
+export interface FlattenedAsset {
+  id?: string;
+  name?: string;
+  original?: string;
+  format?: {
+    syntax_highlight?: string;
+  };
+  tags?: Array<{
+    text?: string;
+  }>;
+  metadata?: {
+    custom?: Array<{
+      key: string;
+      value: string;
+    }>;
+  };
+  created?: {
+    milliseconds: number;
+  };
+  updated?: {
+    milliseconds: number;
+  };
+}
+
+export interface FlattenedAssets {
+  iterable: FlattenedAsset[];
+}
+
 export class PiecesService {
-  private piecesApi: PiecesApi;
-  private connectorApi: ConnectorApi;
-  private portsApi: PortsApi;
+  private baseUrl: string;
+  private apiKey?: string;
+  private headers: Record<string, string>;
 
   constructor(config: PiecesConfig = {}) {
-    const configuration = new Configuration({
-      apiKey: config.apiKey,
-      basePath: config.baseUrl || 'http://localhost:1000',
-    });
-
-    this.piecesApi = new PiecesApi(configuration);
-    this.connectorApi = new ConnectorApi(configuration);
-    this.portsApi = new PortsApi(configuration);
+    this.baseUrl = config.baseUrl || 'http://localhost:1000';
+    this.apiKey = config.apiKey;
+    this.headers = {
+      'Content-Type': 'application/json',
+      ...(this.apiKey ? { 'Authorization': `Bearer ${this.apiKey}` } : {})
+    };
   }
 
   /**
@@ -33,26 +60,30 @@ export class PiecesService {
   ): Promise<string> {
     try {
       // Create the asset (snippet)
-      const response = await this.piecesApi.assetsCreateNewAsset({
-        asset: {
-          name: title,
-          format: {
-            syntax_highlight: language.toLowerCase(),
-          },
-          original: code,
-          tags: tags.map(tag => ({
-            text: tag,
-          })),
-          metadata: {
-            custom: project ? [{ key: 'project', value: project }] : [],
+      const response = await axios.post(
+        `${this.baseUrl}/assets/create`, 
+        {
+          asset: {
+            name: title,
+            format: {
+              syntax_highlight: language.toLowerCase(),
+            },
+            original: code,
+            tags: tags.map(tag => ({
+              text: tag,
+            })),
+            metadata: {
+              custom: project ? [{ key: 'project', value: project }] : [],
+            },
           },
         },
-      });
+        { headers: this.headers }
+      );
 
-      return response.asset?.id || '';
+      return response.data?.asset?.id || '';
     } catch (error) {
       console.error('Error saving snippet to Pieces:', error);
-      throw new Error(`Failed to save snippet to Pieces: ${error}`);
+      return ''; // Return empty string instead of throwing to avoid breaking the app
     }
   }
 
@@ -61,11 +92,14 @@ export class PiecesService {
    */
   async getAllSnippets(): Promise<FlattenedAssets> {
     try {
-      const response = await this.piecesApi.assetsSnapshot({});
-      return response.iterable || { iterable: [] };
+      const response = await axios.get(
+        `${this.baseUrl}/assets/snapshot`,
+        { headers: this.headers }
+      );
+      return response.data?.iterable || { iterable: [] };
     } catch (error) {
       console.error('Error retrieving snippets from Pieces:', error);
-      throw new Error(`Failed to retrieve snippets from Pieces: ${error}`);
+      return { iterable: [] }; // Return empty array instead of throwing
     }
   }
 
@@ -92,7 +126,7 @@ export class PiecesService {
       return todaySnippets;
     } catch (error) {
       console.error('Error retrieving today\'s snippets from Pieces:', error);
-      throw new Error(`Failed to retrieve today's snippets from Pieces: ${error}`);
+      return { iterable: [] }; // Return empty array instead of throwing
     }
   }
 

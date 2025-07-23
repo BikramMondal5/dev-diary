@@ -33,7 +33,7 @@ import {
 
 import config from "@/lib/config"
 import DiaryCoordinator from "@/services/diary-coordinator"
-import { ActivityData } from "@/services/openai-service"
+import { ActivityData } from "@/services/gemini-service"
 
 // Mock data for development
 const mockSnippets = [
@@ -829,12 +829,12 @@ GROUP BY u.id, u.name;
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-1">
-                <h3 className="text-sm font-medium">OpenAI API</h3>
+                <h3 className="text-sm font-medium">Gemini API</h3>
                 <div className="flex items-center space-x-2">
                   <Input 
                     type="password" 
-                    placeholder="OpenAI API Key" 
-                    value={config.openai.apiKey ? "••••••••••••••••••••" : ""}
+                    placeholder="Gemini API Key" 
+                    value={config.gemini.apiKey ? "••••••••••••••••••••" : ""}
                   />
                   <Button size="sm" variant="outline">Update</Button>
                 </div>

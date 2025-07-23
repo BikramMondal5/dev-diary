@@ -3,9 +3,9 @@
  * Using Next.js built-in environment variables support
  */
 export const config = {
-  // OpenAI configuration
-  openai: {
-    apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || '',
+  // Gemini configuration
+  gemini: {
+    apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '',
   },
   
   // Notion configuration
