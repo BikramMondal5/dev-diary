@@ -1,4 +1,4 @@
-# 📝💻 Dev Diary 
+# 📝💻 Dev Diary - "Summarize Your Code. Reflect Your Progress"
 
 ![Dev Diary Dashboard](./public/screenshot.png)
 A comprehensive tool for developers to document their coding activities, generate insightful summaries, and publish development journals across multiple platforms. Dev Diary helps you track your progress, remember decisions, and create shareable documentation of your development journey.
