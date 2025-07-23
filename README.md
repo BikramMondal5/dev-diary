@@ -41,7 +41,7 @@ A comprehensive tool for developers to document their coding activities, generat
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/dev-diary.git
+   git clone https://github.com/BikramMondal5/dev-diary
    cd dev-diary
    ```
 

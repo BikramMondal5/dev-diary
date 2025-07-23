@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerateContentRequest, HarmBlockThreshold, HarmCategory } from '@google/generative-ai';
 
 export interface ActivityData {
   snippets: {

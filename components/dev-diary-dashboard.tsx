@@ -38,6 +38,37 @@ import { ActivityData } from "@/services/gemini-service"
 // Mock data for development
 const mockSnippets = [
   {
+    id: 0,
+    code: `{
+  "mcpServers": {
+    "sqlite": {
+      "command": "python",
+      "args": ["-m", "mcp_server.sqlite_server"],
+      "env": {
+        "DATABASE_PATH": "database.db"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/files"],
+      "env": {}
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "your-brave-api-key"
+      }
+    }
+  }
+}`,
+    language: "JSON",
+    tags: ["json", "configuration", "mcp"],
+    project: "MCP Server Config",
+    timestamp: "2024-07-24T10:15:00Z",
+    enriched: true,
+  },
+  {
     id: 1,
     code: `function calculateTotal(items) {
   return items.reduce((sum, item) => {
@@ -79,7 +110,7 @@ GROUP BY u.id, u.name;`,
   },
 ]
 
-const languageColors = {
+const languageColors: Record<string, string> = {
   JavaScript: "#F7DF1E",
   Python: "#3776AB",
   SQL: "#336791",
@@ -363,8 +394,9 @@ GROUP BY u.id, u.name;
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">John Doe</p>
-                      <p className="text-xs leading-none text-muted-foreground">john@example.com</p>
+                      <p className="text-sm font-medium leading-none">Bikram Doe</p>
+
+                      <p className="text-xs leading-none text-muted-foreground">bikram@example.com</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -508,7 +540,7 @@ GROUP BY u.id, u.name;
                 <TabsContent value="dashboard" className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h1 className="text-3xl font-bold">Welcome back, John!</h1>
+                      <h1 className="text-3xl font-bold">Welcome back, Bikram!</h1>
                       <p className="text-muted-foreground">Today is {currentDate}</p>
                     </div>
                     <Button 
@@ -592,6 +624,74 @@ GROUP BY u.id, u.name;
                     <CardContent>
                       <ScrollArea className="h-[300px]">
                         <div className="space-y-4">
+                          <div className="flex items-start space-x-4 p-4 border rounded-lg">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <Badge
+                                  variant="secondary"
+                                  style={{
+                                    backgroundColor: `${languageColors["JSON"]}20` || "#89CFF020",
+                                    color: languageColors["JSON"] || "#89CFF0",
+                                  }}
+                                >
+                                  JSON
+                                </Badge>
+                                <span className="text-sm text-muted-foreground">MCP Server Config</span>
+                                <Badge variant="outline" className="text-xs">
+                                  <Sparkles className="mr-1 h-3 w-3" />
+                                  Enriched
+                                </Badge>
+                              </div>
+                              <pre className="text-sm bg-muted p-2 rounded overflow-x-auto">
+                                <code>{`{
+  "mcpServers": {
+    "sqlite": {
+      "command": "python",
+      "args": ["-m", "mcp_server.sqlite_server"],
+      "env": {
+        "DATABASE_PATH": "database.db"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/files"],
+      "env": {}
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "your-brave-api-key"
+      }
+    }
+  }
+}`}</code>
+                              </pre>
+                              <div className="flex flex-wrap gap-1">
+                                <Badge variant="outline" className="text-xs">
+                                  json
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  configuration
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  mcp
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="flex flex-col space-y-1">
+                              <Button variant="ghost" size="sm">
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Sparkles className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+
                           {filteredSnippets.map((snippet) => (
                             <div key={snippet.id} className="flex items-start space-x-4 p-4 border rounded-lg">
                               <div className="flex-1 space-y-2">
@@ -800,6 +900,78 @@ GROUP BY u.id, u.name;
                         )}
                       </Button>
                     </CardFooter>
+                  </Card>
+
+                  <Card className="mb-4">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BookText className="h-4 w-4" />
+                        Code Snippets Summary
+                      </CardTitle>
+                      <CardDescription>Professional summary of all code snippets in your collection</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="prose prose-sm max-w-none">
+                        <h3>Technical Code Analysis</h3>
+                        <p>
+                          Your code repository demonstrates proficiency across multiple programming paradigms and technology stacks.
+                          The collected snippets showcase architectural patterns, data processing techniques, and system configuration approaches
+                          that align with industry best practices.
+                        </p>
+                        
+                        <h3>Architecture & Configuration (JSON)</h3>
+                        <p>
+                          The Model Context Protocol server configuration implements a modular, service-oriented architecture
+                          with clear separation of concerns. Each service (SQLite, filesystem, Brave Search) is independently 
+                          configurable with appropriate command interfaces and environment variables. This approach enables 
+                          flexible deployment strategies while maintaining configuration consistency across services.
+                        </p>
+                        
+                        <h3>Functional Programming (JavaScript)</h3>
+                        <p>
+                          The JavaScript calculation function demonstrates effective use of functional programming principles,
+                          specifically employing the reduce higher-order function for data transformation. This implementation
+                          showcases immutable data handling and declarative programming style, resulting in concise, 
+                          maintainable code with predictable behavior in e-commerce calculation contexts.
+                        </p>
+                        
+                        <h3>Object-Oriented Design (Python)</h3>
+                        <p>
+                          The Python UserService class exemplifies SOLID principles with clear single responsibility
+                          and dependency injection patterns. The service abstraction properly encapsulates database operations
+                          while providing a clean API surface. This design facilitates unit testing through mock injection
+                          and promotes loose coupling between system components.
+                        </p>
+                        
+                        <h3>Data Analysis & Performance (SQL)</h3>
+                        <p>
+                          The SQL query demonstrates advanced analytical capabilities through effective table joins,
+                          conditional filtering, and data aggregation. The query structure follows performance optimization
+                          best practices with selective column projection and proper indexing considerations. The GROUP BY
+                          implementation enables meaningful business intelligence extraction for user behavior analysis.
+                        </p>
+
+                        <h3>Technical Competencies</h3>
+                        <p>
+                          This collection comprehensively demonstrates:
+                        </p>
+                        <ul>
+                          <li>Distributed systems configuration with environment isolation</li>
+                          <li>Functional programming with higher-order functions</li>
+                          <li>Object-oriented design with proper encapsulation and dependency management</li>
+                          <li>Data modeling and analytical query optimization</li>
+                          <li>Cross-platform development expertise spanning front-end, back-end, and data layers</li>
+                          <li>Modern development practices including configuration as code and API-first design</li>
+                        </ul>
+                        
+                        <h3>Development Trends</h3>
+                        <p>
+                          Your recent coding activity shows increased focus on API development and data processing workflows,
+                          with particular emphasis on service configuration and performance optimization. Consider exploring
+                          additional error handling patterns and automated testing approaches to further enhance code quality.
+                        </p>
+                      </div>
+                    </CardContent>
                   </Card>
 
                   <div className="flex flex-wrap gap-2">
