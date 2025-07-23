@@ -1,0 +1,587 @@
+"use client"
+
+import { useState } from "react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "@/hooks/use-toast"
+import {
+  Code2,
+  Settings,
+  Plus,
+  Tag,
+  FolderOpen,
+  Edit3,
+  Trash2,
+  Sparkles,
+  Download,
+  Mail,
+  RefreshCw,
+  Filter,
+  Moon,
+  Sun,
+  User,
+  LogOut,
+  Bell,
+  Eye,
+  EyeOff,
+  Copy,
+} from "lucide-react"
+
+// Mock data
+const mockSnippets = [
+  {
+    id: 1,
+    code: `function calculateTotal(items) {
+  return items.reduce((sum, item) => {
+    return sum + (item.price * item.quantity);
+  }, 0);
+}`,
+    language: "JavaScript",
+    tags: ["function", "array", "calculation"],
+    project: "E-commerce App",
+    timestamp: "2024-01-15T10:30:00Z",
+    enriched: true,
+  },
+  {
+    id: 2,
+    code: `class UserService:
+    def __init__(self, db_connection):
+        self.db = db_connection
+    
+    def create_user(self, user_data):
+        return self.db.users.insert(user_data)`,
+    language: "Python",
+    tags: ["class", "database", "user-management"],
+    project: "API Backend",
+    timestamp: "2024-01-15T09:15:00Z",
+    enriched: false,
+  },
+  {
+    id: 3,
+    code: `SELECT u.name, COUNT(o.id) as order_count
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE u.created_at >= '2024-01-01'
+GROUP BY u.id, u.name;`,
+    language: "SQL",
+    tags: ["query", "join", "aggregation"],
+    project: "Analytics Dashboard",
+    timestamp: "2024-01-15T08:45:00Z",
+    enriched: true,
+  },
+]
+
+const languageColors = {
+  JavaScript: "#F7DF1E",
+  Python: "#3776AB",
+  SQL: "#336791",
+  TypeScript: "#3178C6",
+  React: "#61DAFB",
+  Node: "#339933",
+}
+
+export default function DevDiaryDashboard() {
+  const [darkMode, setDarkMode] = useState(false)
+  const [selectedSnippet, setSelectedSnippet] = useState(null)
+  const [markdownContent, setMarkdownContent] = useState(`# Dev Diary - January 15, 2024
+
+## Summary
+Today I focused on improving the e-commerce application's checkout flow and optimizing database queries for the analytics dashboard.
+
+## Code Highlights
+
+### JavaScript - E-commerce App
+\`\`\`javascript
+function calculateTotal(items) {
+  return items.reduce((sum, item) => {
+    return sum + (item.price * item.quantity);
+  }, 0);
+}
+\`\`\`
+
+### Python - API Backend
+\`\`\`python
+class UserService:
+    def __init__(self, db_connection):
+        self.db = db_connection
+    
+    def create_user(self, user_data):
+        return self.db.users.insert(user_data)
+\`\`\`
+
+## Tags Used
+- function, array, calculation
+- class, database, user-management
+- query, join, aggregation
+
+## Projects Worked On
+- E-commerce App
+- API Backend
+- Analytics Dashboard
+
+## Next Steps
+- Implement error handling for user creation
+- Add unit tests for calculation functions
+- Optimize SQL queries for better performance`)
+
+  const [previewMode, setPreviewMode] = useState(false)
+  const [filterLanguage, setFilterLanguage] = useState("all")
+  const [filterProject, setFilterProject] = useState("all")
+
+  const filteredSnippets = mockSnippets.filter((snippet) => {
+    const languageMatch = filterLanguage === "all" || snippet.language === filterLanguage
+    const projectMatch = filterProject === "all" || snippet.project === filterProject
+    return languageMatch && projectMatch
+  })
+
+  const handleGenerateDiary = () => {
+    toast({
+      title: "Diary Generated",
+      description: "Today's dev diary has been successfully generated!",
+    })
+  }
+
+  const handleExport = (format: string) => {
+    toast({
+      title: `Exported as ${format.toUpperCase()}`,
+      description: `Your dev diary has been exported as ${format} file.`,
+    })
+  }
+
+  const handleEmailSend = () => {
+    toast({
+      title: "Email Sent",
+      description: "Your dev diary has been sent via n8n integration.",
+    })
+  }
+
+  const handleEnrichSnippet = (snippetId: number) => {
+    toast({
+      title: "Snippet Enriched",
+      description: "AI has added context and documentation to your snippet.",
+    })
+  }
+
+  return (
+    <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
+      <div className="bg-background text-foreground">
+        {/* Top Navigation */}
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container flex h-16 items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <Code2 className="h-6 w-6 text-primary" />
+                <span className="text-xl font-bold">Dev Diary</span>
+              </div>
+              <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+                <a href="#" className="text-foreground/60 hover:text-foreground transition-colors">
+                  Dashboard
+                </a>
+                <a href="#" className="text-foreground/60 hover:text-foreground transition-colors">
+                  Snippets
+                </a>
+                <a href="#" className="text-foreground/60 hover:text-foreground transition-colors">
+                  Summarizer
+                </a>
+                <a href="#" className="text-foreground/60 hover:text-foreground transition-colors">
+                  Settings
+                </a>
+                <a href="#" className="text-foreground/60 hover:text-foreground transition-colors">
+                  Help
+                </a>
+              </nav>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Sun className="h-4 w-4" />
+                <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+                <Moon className="h-4 w-4" />
+              </div>
+
+              <Button variant="ghost" size="icon">
+                <Bell className="h-4 w-4" />
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="https://avatars.githubusercontent.com/u/170235967?v=4" alt="User" />
+                      <AvatarFallback>JD</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">John Doe</p>
+                      <p className="text-xs leading-none text-muted-foreground">john@example.com</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Sidebar */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filters
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="language-filter">Language</Label>
+                    <Select value={filterLanguage} onValueChange={setFilterLanguage}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Languages" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Languages</SelectItem>
+                        <SelectItem value="JavaScript">JavaScript</SelectItem>
+                        <SelectItem value="Python">Python</SelectItem>
+                        <SelectItem value="SQL">SQL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="project-filter">Project</Label>
+                    <Select value={filterProject} onValueChange={setFilterProject}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Projects" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Projects</SelectItem>
+                        <SelectItem value="E-commerce App">E-commerce App</SelectItem>
+                        <SelectItem value="API Backend">API Backend</SelectItem>
+                        <SelectItem value="Analytics Dashboard">Analytics Dashboard</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Integration Status</h4>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">n8n</span>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        ✅ Connected
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Pieces API</span>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        ✅ Connected
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Main Content */}
+            <div className="lg:col-span-3">
+              <Tabs defaultValue="dashboard" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                  <TabsTrigger value="snippets">Snippets</TabsTrigger>
+                  <TabsTrigger value="summarizer">Summarizer</TabsTrigger>
+                </TabsList>
+
+                {/* Dashboard Tab */}
+                <TabsContent value="dashboard" className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-3xl font-bold">Welcome back, John!</h1>
+                      <p className="text-muted-foreground">Today is January 15, 2024</p>
+                    </div>
+                    <Button onClick={handleGenerateDiary} className="bg-primary hover:bg-primary/90">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate Today's Diary
+                    </Button>
+                  </div>
+
+                  {/* Metrics Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Snippets Today</CardTitle>
+                        <Code2 className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">🧩 {mockSnippets.length}</div>
+                        <p className="text-xs text-muted-foreground">+2 from yesterday</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Tags Applied</CardTitle>
+                        <Tag className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">🏷️ 9</div>
+                        <p className="text-xs text-muted-foreground">Across all snippets</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Projects</CardTitle>
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">📁 3</div>
+                        <p className="text-xs text-muted-foreground">Active projects</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Recent Activity */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Recent Activity</CardTitle>
+                      <CardDescription>Your latest coding snippets and activities</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[300px]">
+                        <div className="space-y-4">
+                          {filteredSnippets.map((snippet) => (
+                            <div key={snippet.id} className="flex items-start space-x-4 p-4 border rounded-lg">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <Badge
+                                    variant="secondary"
+                                    style={{
+                                      backgroundColor: `${languageColors[snippet.language]}20`,
+                                      color: languageColors[snippet.language],
+                                    }}
+                                  >
+                                    {snippet.language}
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground">{snippet.project}</span>
+                                  {snippet.enriched && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <Sparkles className="mr-1 h-3 w-3" />
+                                      Enriched
+                                    </Badge>
+                                  )}
+                                </div>
+                                <pre className="text-sm bg-muted p-2 rounded overflow-x-auto">
+                                  <code>{snippet.code.split("\n").slice(0, 3).join("\n")}...</code>
+                                </pre>
+                                <div className="flex flex-wrap gap-1">
+                                  {snippet.tags.map((tag) => (
+                                    <Badge key={tag} variant="outline" className="text-xs">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex flex-col space-y-1">
+                                <Button variant="ghost" size="sm">
+                                  <Edit3 className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleEnrichSnippet(snippet.id)}>
+                                  <Sparkles className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Snippets Tab */}
+                <TabsContent value="snippets" className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Code Snippets</h2>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Snippet
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredSnippets.map((snippet) => (
+                      <Card key={snippet.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Badge
+                                variant="secondary"
+                                style={{
+                                  backgroundColor: `${languageColors[snippet.language]}20`,
+                                  color: languageColors[snippet.language],
+                                }}
+                              >
+                                {snippet.language}
+                              </Badge>
+                              {snippet.enriched && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Sparkles className="mr-1 h-3 w-3" />
+                                  Enriched
+                                </Badge>
+                              )}
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <Settings className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem>
+                                  <Edit3 className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Copy className="mr-2 h-4 w-4" />
+                                  Copy
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEnrichSnippet(snippet.id)}>
+                                  <Sparkles className="mr-2 h-4 w-4" />
+                                  Enrich
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          <CardDescription>{snippet.project}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <pre className="text-sm bg-muted p-3 rounded overflow-x-auto mb-3">
+                            <code>{snippet.code}</code>
+                          </pre>
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {snippet.tags.map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(snippet.timestamp).toLocaleString()}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                {/* Summarizer Tab */}
+                <TabsContent value="summarizer" className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">Dev Diary Summarizer</h2>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" onClick={() => setPreviewMode(!previewMode)}>
+                        {previewMode ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                        {previewMode ? "Edit" : "Preview"}
+                      </Button>
+                      <Button variant="outline">
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Regenerate
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Markdown Editor</CardTitle>
+                      <CardDescription>Edit your dev diary content or preview the final result</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {previewMode ? (
+                        <ScrollArea className="h-[500px] w-full border rounded-md p-4">
+                          <div className="prose prose-sm max-w-none">
+                            <pre className="whitespace-pre-wrap">{markdownContent}</pre>
+                          </div>
+                        </ScrollArea>
+                      ) : (
+                        <Textarea
+                          value={markdownContent}
+                          onChange={(e) => setMarkdownContent(e.target.value)}
+                          className="min-h-[500px] font-mono text-sm"
+                          placeholder="Your dev diary content will appear here..."
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={() => handleExport("md")}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export .md
+                    </Button>
+                    <Button onClick={() => handleExport("pdf")} variant="outline">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export .pdf
+                    </Button>
+                    <Button onClick={handleEmailSend} variant="outline">
+                      <Mail className="mr-2 h-4 w-4" />
+                      Email via n8n
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating Action Button */}
+        <Button className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg" size="icon">
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+    </div>
+  )
+}
