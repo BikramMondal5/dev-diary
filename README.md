@@ -38,8 +38,6 @@ A comprehensive tool for developers to document their coding activities, generat
   - Telegram (optional)
   - Pieces (optional)
 
-### Installation
-
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/BikramMondal5/dev-diary
