@@ -499,25 +499,21 @@ GROUP BY u.id, u.name;
     // Add listener for captured code snippets
     const handleExternalSnippet = (snippet: ClipboardSnippet) => {
       setRecentlyUsedSnippets(prev => {
-        // Create a unique ID if needed
-        const snippetWithId = {
-          ...snippet,
-          id: snippet.id || `external-${Date.now()}`
-        };
-        
-        // Remove duplicates (by matching code content)
-        const filtered = prev.filter(s => 
-          s.id !== snippetWithId.id && 
-          s.code !== snippetWithId.code
-        );
+        // Always create a new array with the new snippet at the beginning
+        const newSnippets = [
+          {
+            ...snippet,
+            timestamp: new Date().toISOString() // Ensure fresh timestamp
+          },
+          ...prev
+        ].slice(0, 10); // Keep only the 10 most recent snippets
         
         toast({
           title: `${snippet.language} Code Detected`,
           description: "External code snippet has been added to your Recent Activity.",
         });
         
-        // Add the new snippet at the beginning
-        return [snippetWithId, ...filtered].slice(0, 10);
+        return newSnippets;
       });
     };
     

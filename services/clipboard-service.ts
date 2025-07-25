@@ -107,25 +107,27 @@ export class ClipboardService {
 
   // Process clipboard content
   private processClipboardContent(text: string): void {
-    // Skip if content is unchanged or not code-like
-    if (text === this.lastCopiedText || !this.looksLikeCode(text)) return;
+    // Only check if the content is code-like
+    if (!this.looksLikeCode(text)) return;
     
-    this.lastCopiedText = text;
-    
-    // Create snippet from clipboard content
+    // Create snippet from clipboard content with timestamp in the ID to ensure uniqueness
     const language = detectLanguage(text);
+    const timestamp = new Date().toISOString();
     const snippet: ClipboardSnippet = {
-      id: `external-${Date.now()}`,
+      id: `external-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       code: text,
       language: language || 'Unknown',
       project: 'External Source',
       tags: [language?.toLowerCase() || 'code', 'external'],
-      timestamp: new Date().toISOString(),
+      timestamp,
       source: 'External Clipboard',
       enriched: false
     };
     
-    // Notify listeners
+    // Track the last processed text - but don't use it to filter
+    this.lastCopiedText = text;
+    
+    // Notify listeners for every detected code snippet, even if content is the same
     this.clipboardListeners.forEach(listener => listener(snippet));
   }
 
