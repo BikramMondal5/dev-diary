@@ -136,6 +136,7 @@ export default function DevDiaryDashboard() {
   const [filterProject, setFilterProject] = useState("all")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
+  const [isSavingGist, setIsSavingGist] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [currentDate, setCurrentDate] = useState(format(new Date(), "MMMM dd, yyyy"))
 
@@ -339,6 +340,73 @@ GROUP BY u.id, u.name;
       title: "Snippet Enriched",
       description: "AI has added context and documentation to your snippet.",
     })
+  }
+
+  const handleSaveAsGist = async () => {
+    if (!integrationStatus.github || !config.github.token) {
+      toast({
+        title: "GitHub Not Connected",
+        description: "Please configure your GitHub integration in settings first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSavingGist(true);
+
+      // Create a new DiaryCoordinator with just GitHub config
+      const githubService = new DiaryCoordinator({
+        geminiApiKey: config.gemini.apiKey || 'dummy-key',
+        githubConfig: {
+          githubToken: config.github.token
+        }
+      }).githubService;
+
+      if (!githubService) {
+        throw new Error("Failed to initialize GitHub service");
+      }
+
+      // Create a Gist with the diary content
+      const result = await githubService.createGist(
+        diaryTitle, // Use the diary title as Gist description
+        markdownContent, // Use the current markdown content
+        false // Create as private Gist
+      );
+
+      // Update publish results to include GitHub info
+      setPublishResults(prevResults => ({
+        ...prevResults,
+        github: {
+          url: result.url,
+          id: result.id,
+        }
+      }));
+
+      // Automatically open the Gist in a new tab
+      window.open(result.url, '_blank');
+
+      toast({
+        title: "Saved as Gist",
+        description: (
+          <div>
+            Your diary has been saved as a GitHub Gist.
+            <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline ml-1">
+              View on GitHub
+            </a>
+          </div>
+        )
+      });
+    } catch (error) {
+      console.error("Error saving as Gist:", error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save diary as Gist. Please check your GitHub token and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingGist(false);
+    }
   }
 
   return (
@@ -979,8 +1047,16 @@ GROUP BY u.id, u.name;
                       <BookText className="mr-2 h-4 w-4" />
                       Publish to Notion
                     </Button>
-                    <Button variant="outline">
-                      <Github className="mr-2 h-4 w-4" />
+                    <Button 
+                      variant="outline" 
+                      onClick={handleSaveAsGist}
+                      disabled={!integrationStatus.github || isSavingGist || markdownContent.trim().length === 0}
+                    >
+                      {isSavingGist ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Github className="mr-2 h-4 w-4" />
+                      )}
                       Save as Gist
                     </Button>
                   </div>

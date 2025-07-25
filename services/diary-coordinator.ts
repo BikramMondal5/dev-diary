@@ -1,5 +1,4 @@
 import { format } from 'date-fns';
-import { simpleGit, SimpleGit } from 'simple-git';
 import MarkdownIt from 'markdown-it';
 
 import GeminiService, { ActivityData } from './gemini-service';
@@ -7,6 +6,17 @@ import NotionService from './notion-service';
 import GitHubService from './github-service';
 import TelegramService from './telegram-service';
 import PiecesService from './pieces-service';
+
+// Handle server-side only imports
+let simpleGit: any;
+let SimpleGit: any;
+
+// Only import Node.js specific packages on the server side
+if (typeof window === 'undefined') {
+  const simpleGitModule = require('simple-git');
+  simpleGit = simpleGitModule.simpleGit;
+  SimpleGit = simpleGitModule.SimpleGit;
+}
 
 export interface DiaryCoordinatorConfig {
   geminiApiKey: string;
@@ -31,33 +41,44 @@ export interface DiaryCoordinatorConfig {
 export class DiaryCoordinator {
   private geminiService: GeminiService;
   private notionService?: NotionService;
-  private githubService?: GitHubService;
+  githubService?: GitHubService;
   private telegramService?: TelegramService;
   private piecesService?: PiecesService;
-  private git?: SimpleGit;
+  private git?: any;
   private markdown: MarkdownIt;
+  private isServer: boolean;
 
-  constructor(config: DiaryCoordinatorConfig) {
-    this.geminiService = new GeminiService(config.geminiApiKey);
+  constructor(config?: DiaryCoordinatorConfig) {
+    this.isServer = typeof window === 'undefined';
     
-    if (config.notionConfig) {
-      this.notionService = new NotionService(config.notionConfig);
-    }
-    
-    if (config.githubConfig) {
-      this.githubService = new GitHubService(config.githubConfig);
-    }
-    
-    if (config.telegramConfig) {
-      this.telegramService = new TelegramService(config.telegramConfig);
-    }
-    
-    if (config.piecesConfig) {
-      this.piecesService = new PiecesService(config.piecesConfig);
-    }
-    
-    if (config.repositoryPath) {
-      this.git = simpleGit(config.repositoryPath);
+    if (config) {
+      this.geminiService = new GeminiService(config.geminiApiKey);
+      
+      if (config.notionConfig) {
+        this.notionService = new NotionService(config.notionConfig);
+      }
+      
+      if (config.githubConfig) {
+        this.githubService = new GitHubService(config.githubConfig);
+      }
+      
+      if (config.telegramConfig) {
+        this.telegramService = new TelegramService(config.telegramConfig);
+      }
+      
+      if (config.piecesConfig) {
+        this.piecesService = new PiecesService(config.piecesConfig);
+      }
+      
+      // Only initialize Git on the server side
+      if (config.repositoryPath && this.isServer && simpleGit) {
+        this.git = simpleGit(config.repositoryPath);
+      }
+    } else {
+      // Create with mock/empty config for client-side
+      this.geminiService = new GeminiService('dummy-key-client-side');
+      // GitHub service is needed on client for the Gist functionality
+      this.githubService = new GitHubService({ githubToken: '' });
     }
     
     this.markdown = new MarkdownIt();
