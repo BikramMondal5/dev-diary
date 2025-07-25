@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,16 +24,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { toast } from "@/hooks/use-toast"
 import {
   Code2, Settings, Plus, Tag, FolderOpen, Edit3, Trash2, Sparkles, Download, RefreshCw, Filter,
   Moon, Sun, User, LogOut, Bell, Eye, EyeOff, Copy, Github, Webhook, BookOpen, SendToBack, MessageSquare,
-  Calendar, AlertCircle, CheckCircle, XCircle, Loader2, Github as GithubIcon, BookText
+  Calendar, AlertCircle, CheckCircle, XCircle, Loader2, Github as GithubIcon, BookText, Menu
 } from "lucide-react"
 
+import { cn } from "@/lib/utils"
 import config from "@/lib/config"
 import DiaryCoordinator from "@/services/diary-coordinator"
 import { ActivityData } from "@/services/gemini-service"
+import { useTheme } from "next-themes"
+import ClipboardService, { ClipboardSnippet } from "@/services/clipboard-service"
 
 // Mock data for development
 const mockSnippets = [
@@ -127,8 +131,11 @@ interface IntegrationStatus {
 }
 
 export default function DevDiaryDashboard() {
-  // UI state
+  // Theme handling
+  const { theme, setTheme } = useTheme()
   const [darkMode, setDarkMode] = useState(false)
+  
+  // Other state
   const [selectedSnippet, setSelectedSnippet] = useState<any>(null)
   const [markdownContent, setMarkdownContent] = useState("")
   const [previewMode, setPreviewMode] = useState(false)
@@ -139,6 +146,9 @@ export default function DevDiaryDashboard() {
   const [isSavingGist, setIsSavingGist] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [currentDate, setCurrentDate] = useState(format(new Date(), "MMMM dd, yyyy"))
+  
+  // Recent activity tracking
+  const [recentlyUsedSnippets, setRecentlyUsedSnippets] = useState<Array<any>>([])
 
   // Integration state
   const [integrationStatus, setIntegrationStatus] = useState<IntegrationStatus>({
@@ -156,6 +166,17 @@ export default function DevDiaryDashboard() {
     github?: { url: string; id: string };
     telegram?: boolean;
   }>({})
+
+  // Sync theme state with next-themes
+  useEffect(() => {
+    setDarkMode(theme === "dark")
+  }, [theme])
+
+  // Handle theme toggle
+  const handleThemeToggle = (checked: boolean) => {
+    setDarkMode(checked)
+    setTheme(checked ? "dark" : "light")
+  }
 
   // Snippets state
   const filteredSnippets = mockSnippets.filter((snippet) => {
@@ -409,6 +430,107 @@ GROUP BY u.id, u.name;
     }
   }
 
+  // Handle copying a snippet and add to recent activity
+  const handleCopySnippet = (snippet: any) => {
+    // Copy the code to clipboard
+    navigator.clipboard.writeText(snippet.code);
+    
+    // Add to recently used snippets (avoid duplicates by id)
+    setRecentlyUsedSnippets(prev => {
+      // Remove the snippet if it already exists in the list
+      const filtered = prev.filter(s => s.id !== snippet.id);
+      
+      // Add the snippet to the beginning of the array with updated timestamp
+      return [
+        {
+          ...snippet,
+          timestamp: new Date().toISOString() // Update timestamp to now
+        },
+        ...filtered
+      ].slice(0, 5); // Keep only the 5 most recent snippets
+    });
+    
+    toast({
+      title: "Code Copied",
+      description: "Code snippet has been copied to clipboard and added to your recent activity.",
+    });
+  };
+
+  // Clipboard monitoring effect
+  useEffect(() => {
+    const clipboardService = new ClipboardService({
+      onSnippetCopied: (snippet: ClipboardSnippet) => {
+        // Automatically add copied snippet to recently used snippets
+        setRecentlyUsedSnippets(prev => {
+          // Remove the snippet if it already exists in the list
+          const filtered = prev.filter(s => s.id !== snippet.id);
+          
+          // Add the snippet to the beginning of the array
+          return [
+            {
+              ...snippet,
+              timestamp: new Date().toISOString() // Update timestamp to now
+            },
+            ...filtered
+          ].slice(0, 5); // Keep only the 5 most recent snippets
+        });
+
+        toast({
+          title: "Snippet Copied",
+          description: "A new snippet has been copied to your clipboard.",
+        });
+      }
+    });
+
+    clipboardService.start();
+
+    return () => {
+      clipboardService.stop();
+    };
+  }, []);
+
+  // External clipboard monitoring effect
+  useEffect(() => {
+    // Only run on the client side
+    if (typeof window === 'undefined') return;
+    
+    const clipboardService = ClipboardService.getInstance();
+    
+    // Add listener for captured code snippets
+    const handleExternalSnippet = (snippet: ClipboardSnippet) => {
+      setRecentlyUsedSnippets(prev => {
+        // Create a unique ID if needed
+        const snippetWithId = {
+          ...snippet,
+          id: snippet.id || `external-${Date.now()}`
+        };
+        
+        // Remove duplicates (by matching code content)
+        const filtered = prev.filter(s => 
+          s.id !== snippetWithId.id && 
+          s.code !== snippetWithId.code
+        );
+        
+        toast({
+          title: `${snippet.language} Code Detected`,
+          description: "External code snippet has been added to your Recent Activity.",
+        });
+        
+        // Add the new snippet at the beginning
+        return [snippetWithId, ...filtered].slice(0, 10);
+      });
+    };
+    
+    clipboardService.addListener(handleExternalSnippet);
+    clipboardService.start();
+    
+    // Cleanup function
+    return () => {
+      clipboardService.removeListener(handleExternalSnippet);
+      clipboardService.stop();
+    };
+  }, []);
+
   return (
     <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
       <div className="bg-background text-foreground">
@@ -442,13 +564,69 @@ GROUP BY u.id, u.name;
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Sun className="h-4 w-4" />
-                <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+                <Switch checked={darkMode} onCheckedChange={handleThemeToggle} />
                 <Moon className="h-4 w-4" />
               </div>
 
               <Button variant="ghost" size="icon">
                 <Bell className="h-4 w-4" />
               </Button>
+
+              {/* Mobile menu button */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="md:hidden">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[80%] sm:w-[385px]">
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-center justify-between py-4 border-b">
+                      <div className="flex items-center gap-2">
+                        <Code2 className="h-5 w-5 text-primary" />
+                        <span className="font-bold">Dev Diary</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Sun className="h-4 w-4" />
+                        <Switch checked={darkMode} onCheckedChange={handleThemeToggle} />
+                        <Moon className="h-4 w-4" />
+                      </div>
+                    </div>
+                    
+                    <div className="py-4 flex flex-col space-y-3">
+                      <div className="flex items-center gap-2 p-3 hover:bg-accent rounded-md">
+                        <Code2 className="h-4 w-4" />
+                        <span>Dashboard</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-3 hover:bg-accent rounded-md">
+                        <FolderOpen className="h-4 w-4" />
+                        <span>Snippets</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-3 hover:bg-accent rounded-md">
+                        <BookText className="h-4 w-4" />
+                        <span>Summarizer</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-3 hover:bg-accent rounded-md" onClick={() => setSettingsOpen(true)}>
+                        <Settings className="h-4 w-4" />
+                        <span>Settings</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto border-t py-4">
+                      <div className="flex items-center p-2 gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src="https://avatars.githubusercontent.com/u/170235967?v=4" alt="User" />
+                          <AvatarFallback>JD</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">Bikram Doe</p>
+                          <p className="text-xs text-muted-foreground">bikram@example.com</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -463,7 +641,6 @@ GROUP BY u.id, u.name;
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">Bikram Doe</p>
-
                       <p className="text-xs leading-none text-muted-foreground">bikram@example.com</p>
                     </div>
                   </DropdownMenuLabel>
@@ -692,6 +869,67 @@ GROUP BY u.id, u.name;
                     <CardContent>
                       <ScrollArea className="h-[300px]">
                         <div className="space-y-4">
+                          {/* Recently copied snippets appear at the top */}
+                          {recentlyUsedSnippets.length > 0 && (
+                            <>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline" className="bg-primary/10 text-primary">
+                                  Recently Copied
+                                </Badge>
+                              </div>
+                              {recentlyUsedSnippets.map((snippet) => (
+                                <div key={`recent-${snippet.id}`} className="flex items-start space-x-4 p-4 border rounded-lg border-primary/20 bg-primary/5">
+                                  <div className="flex-1 space-y-2">
+                                    <div className="flex items-center space-x-2">
+                                      <Badge
+                                        variant="secondary"
+                                        style={{
+                                          backgroundColor: `${languageColors[snippet.language]}20`,
+                                          color: languageColors[snippet.language],
+                                        }}
+                                      >
+                                        {snippet.language}
+                                      </Badge>
+                                      <span className="text-sm text-muted-foreground">{snippet.project}</span>
+                                      {snippet.enriched && (
+                                        <Badge variant="outline" className="text-xs">
+                                          <Sparkles className="mr-1 h-3 w-3" />
+                                          Enriched
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <pre className="text-sm bg-muted p-2 rounded overflow-x-auto">
+                                      <code>{snippet.code.split("\n").slice(0, 3).join("\n")}...</code>
+                                    </pre>
+                                    <div className="flex flex-wrap gap-1">
+                                      {snippet.tags.map((tag) => (
+                                        <Badge key={tag} variant="outline" className="text-xs">
+                                          {tag}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      Copied {new Date(snippet.timestamp).toLocaleTimeString()}
+                                    </p>
+                                  </div>
+                                  <div className="flex flex-col space-y-1">
+                                    <Button variant="ghost" size="sm">
+                                      <Edit3 className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleCopySnippet(snippet)}>
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleEnrichSnippet(snippet.id)}>
+                                      <Sparkles className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                              <Separator className="my-4" />
+                            </>
+                          )}
+
+                          {/* Original fixed snippets */}
                           <div className="flex items-start space-x-4 p-4 border rounded-lg">
                             <div className="flex-1 space-y-2">
                               <div className="flex items-center space-x-2">
@@ -751,7 +989,7 @@ GROUP BY u.id, u.name;
                               <Button variant="ghost" size="sm">
                                 <Edit3 className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleCopySnippet(mockSnippets[0])}>
                                 <Copy className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="sm">
@@ -796,7 +1034,7 @@ GROUP BY u.id, u.name;
                                 <Button variant="ghost" size="sm">
                                   <Edit3 className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" onClick={() => handleCopySnippet(snippet)}>
                                   <Copy className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="sm" onClick={() => handleEnrichSnippet(snippet.id)}>
@@ -1159,10 +1397,71 @@ GROUP BY u.id, u.name;
           </DialogContent>
         </Dialog>
 
-        {/* Floating Action Button */}
-        <Button className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg" size="icon">
-          <Plus className="h-6 w-6" />
-        </Button>
+        {/* Mobile Navigation Drawer */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg">
+              <Plus className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="p-4">
+            <div className="flex flex-col gap-4">
+              <Button 
+                onClick={handleGenerateDiary} 
+                className="bg-primary hover:bg-primary/90"
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Today's Diary
+                  </>
+                )}
+              </Button>
+
+              <Button variant="outline" onClick={() => setPreviewMode(!previewMode)}>
+                {previewMode ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                {previewMode ? "Edit" : "Preview"}
+              </Button>
+
+              <Button 
+                onClick={handlePublishDiary} 
+                disabled={isPublishing || markdownContent.trim().length === 0}
+                className="bg-primary"
+              >
+                {isPublishing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <SendToBack className="mr-2 h-4 w-4" />
+                    Publish to All
+                  </>
+                )}
+              </Button>
+
+              <Button 
+                variant="outline" 
+                onClick={handleSaveAsGist}
+                disabled={!integrationStatus.github || isSavingGist || markdownContent.trim().length === 0}
+              >
+                {isSavingGist ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Github className="mr-2 h-4 w-4" />
+                )}
+                Save as Gist
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   )
